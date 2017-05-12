@@ -185,6 +185,10 @@ if $LINK_GIT_HOOKS; then
   echo "Setting up hooks to post the commit message and hash to the related Pivotal Tracker ticket..."
   echo "What is the Pivotal Tracker project ID? You can get this from the URL when viewing the project dashboard. Enter the ID (if there is one) and press ENTER to continue."
   read pt_id
+  if [ -z $pt_id ]; then
+    echo "No Pivotal Tracker project.  Bailing."
+    exit 0;
+  fi
   copied_location=$( cd "$( dirname ".git/hooks" )" && pwd )
   if [ ! -f $PRE_PUSH ]; then
     echo "ERROR: The pre-push script does not exist:" >&2
