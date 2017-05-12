@@ -1,0 +1,51 @@
+#!/usr/bin/php
+<?php
+require_once __DIR__.'/vendor/autoload.php';
+require_once 'pivotalTracker.php';
+
+use GitWrapper\GitWrapper;
+use GitWrapper\GitWorkingCopy;
+use GitWrapper\GitBranches;
+
+try {
+  $gWrapper = new GitWrapper();
+  $gWorkingCopy = new GitWorkingCopy($gWrapper, getcwd());
+  $gBranches = new GitBranches($gWorkingCopy);
+
+  $message = file_get_contents($argv[1]);
+  $message = trim($message);
+
+  try {
+    $api_token = $gWrapper->git('config pivotaltracker.apitoken');
+    $api_token = trim($api_token);
+  } catch (Exception $e) {
+    print('Error: No auth token set. Use `git config pivotaltracker.apitoken "XXXXXXX"` to set your PivotalTracker auth token.' . PHP_EOL);
+    exit(1);
+  }
+
+  try {
+    $project_id = $gWrapper->git('config pivotaltracker.projectid');
+    $project_id = trim($project_id);
+  } catch (Exception $e) {
+    print('Error: No project id set. Use `git config pivotaltracker.projectid "XXXXXXX"` to set your PivotalTracker project id.' . PHP_EOL);
+    exit(1);
+  }
+
+  $pt = new PivotalTracker($api_token, $project_id);
+
+  if ($pt->getTicketNumber($message)) {
+    try {
+      $ticket = $pt->getTicket($message);
+    } catch (Exception $e) {
+      print('Error: ' . $e->getMessage() . PHP_EOL);
+      exit(1);
+    }
+  }
+  else {
+    print('Warning: This commit does not contain a PivotalTracker ticket number. If this was a mistake use `git commit -m "[#000000] Message" --amend` to amend the message.' . PHP_EOL);
+  }
+
+} catch (Exception $e) {
+  print('Error: ' . $e->getMessage() . ' You may need to make your commit with the --no-verify flag to bypass this hook.' . PHP_EOL);
+  exit(1);
+}

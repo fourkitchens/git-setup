@@ -1,0 +1,211 @@
+#!/bin/bash
+# git-setup
+# Setup this git repository with good defaults.
+
+# INSTRUCTIONS #
+#
+# Run this script to set up your repository to work with the Advo workflow.
+
+# Are we in the root of the repo?
+if [ ! -d ./.git ]; then
+  echo "ERROR: ./.git not found.  This script needs to be run from the root of the repository." >&2
+  exit 1
+fi
+
+# CONFIGURATION #
+#
+# You probably shouldn't need to change any of the following.
+#
+# Do you want to symlink to the Git hooks, or just copy them to .git/hooks/*
+# In most cases linking is the better choice because it means that the hooks
+# will be automatically updated as the git-setup repo is updated.  Copying may
+# be a better choice if the script needs project-specific customizations, or
+# if the git-setup repo will not always be available.
+LINK_GIT_HOOKS=true
+
+# The base directory of any SASS projects.
+# The following line should usually be commented out and just rely on the automatic configuration that follows.  Must have a trailing slash.
+#THEME_LOCATION="sites/all/themes/*/"
+if [ -z ${THEME_LOCATION+x} ]; then
+  DEFAULT_D7_THEME_LOCATION="sites/all/themes/custom/*/"
+  DEFAULT_D8_THEME_LOCATION="themes/custom/*/"
+  if ls $DEFAULT_D7_THEME_LOCATION 1> /dev/null 2>&1; then
+    THEME_LOCATION=$DEFAULT_D7_THEME_LOCATION
+  elif $DEFAULT_D8_THEME_LOCATION 1> /dev/null 2>&1; then
+    THEME_LOCATION=$DEFAULT_D8_THEME_LOCATION
+  else
+    echo 'ERROR: This site seems to have an unusual location for custom themes.  You need to hardcode the path at the top of this file.  Uncomment and give a value for the line for THEME_LOCATION=""' >&2
+    echo 'ERROR: Be sure to comment it out again when you are done so that your next project is not confused.' >&2
+    exit 1
+  fi
+elif ls $THEME_LOCATION 1> /dev/null 2>&1; then
+  echo;
+  # Nothing to do here, everything should work fine.
+else
+  echo 'ERROR: THEME_LOCATION has been hard-coded in this file, but that path does not exist.  If you just comment it out, the defaults will probably work fine.' >&2
+  exit 1
+fi
+
+#SASS_BUILD_SCRIPT="compass compile $THEME_LOCATION --quiet"
+
+# Things to append to .gitignore.
+# Note that while this mostly duplicates Pantheon's gitignore.  Not everything
+# that we do uses Drops-7 or Drops-8 as a base.
+GIT_IGNORE="
+# Files
+/files/
+/private/
+/sites/*/files/
+/sites/*/private/
+
+# Local Sites
+/sites/*local*
+/sites/*.dev
+/sites/*xip.io
+
+# SASS stuff.
+.sass-cache
+compass_app_log.txt
+"
+
+current_directory=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+POST_REWRITE_INNER="$current_directory/git-hooks/post-rewrite-inner"
+PRE_COMMIT_INNER="$current_directory/git-hooks/pre-commit-inner"
+PRE_PUSH="$current_directory/git-hooks/pre-push"
+COMMIT_MSG="$current_directory/git-hooks/commit-msg"
+PT_API_TOKEN="9b9b6b72311d10211957be55891d7afa"
+
+# END OF CONFIGURATION #
+
+# Defaults for .gitattributes that are in D8 and Drops-8, but not other stuff.
+if [ ! -f .gitattributes ]; then
+  echo "Setting up .gitattributes file with some sane defaults. Be sure to commit this file."
+  echo "*.engine   diff=php" >> .gitattributes
+  echo "*.inc      diff=php" >> .gitattributes
+  echo "*.install  diff=php" >> .gitattributes
+  echo "*.module   diff=php" >> .gitattributes
+  echo "*.php      diff=php" >> .gitattributes
+  echo "*.profile  diff=php" >> .gitattributes
+  echo "*.test     diff=php" >> .gitattributes
+  echo "*.theme    diff=php" >> .gitattributes
+fi
+
+# Binary compiled CSS.
+string="${THEME_LOCATION}css/* -diff"
+fgrep "$string" .gitattributes > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "Setting up .gitattributes file with some sane defaults. Be sure to commit this file."
+  echo "$string" >> .gitattributes
+  echo "${THEME_LOCATION}css/* -diff"  >> .gitattributes
+  echo "${THEME_LOCATION}css/*/* -diff"  >> .gitattributes
+  echo "${THEME_LOCATION}css/*/*/* -diff" >> .gitattributes
+fi;
+
+# .git/info/exclude
+echo "Setting up files/directories to ignore in .git/info/exclude."
+echo -e "$GIT_IGNORE" >> ./.git/info/exclude
+
+# Merge driver for compiled CSS.
+#
+# @todo Commenting this all out until we replace this old compass stuff with grunt.
+#echo "Setting up a merge driver for compiled CSS."
+#git config merge.ours.name "Keep ours merge"
+#git config merge.ours.driver "true"
+#string="${THEME_LOCATION}css/* merge=ours"
+#fgrep "$string" .gitattributes > /dev/null 2>&1
+#if [ $? -ne 0 ]; then
+#  echo "$string" >> .gitattributes
+#fi;
+#
+## .git/hooks/post-rewrite
+#echo "Setting up rebuild of files automatically after a rebase."
+#git config branch.autosetuprebase "always"
+#hook_file=".git/hooks/post-rewrite"
+#if $LINK_GIT_HOOKS; then
+#  script="$POST_REWRITE_INNER '$SASS_BUILD_SCRIPT'"
+#else
+#  copied_location=$( cd "$( dirname ".git/hooks" )" && pwd )
+#  copied_location="$copied_location/hooks/post-rewrite-inner"
+#  script="$copied_location '$SASS_BUILD_SCRIPT'"
+#fi
+#script="#!/bin/sh
+## post-rewrite
+#$script \$1 \$2 \$3 \$4 \$5"
+#if [ ! -f $POST_REWRITE_INNER ]; then
+#  echo "ERROR: The inner script for the post-rewrite hook does not exist:" >&2
+#  echo "ERROR: $POST_REWRITE_INNER" >&2
+#else
+#  $SASS_BUILD_SCRIPT --dry-run  > /dev/null 2>&1
+#  if [ $? -ne 0 ]; then
+#    echo "ERROR: The SASS build script could not be run.  Ensure that you have SASS and Compass are installed.  Also ensure that the following command can be run sucessfully:" >&2
+#    echo "ERROR: $SASS_BUILD_SCRIPT --dry-run" >&2
+#    echo "ERROR: Once this is resolved please re-run this script." >&2
+#    echo "ERROR: This may not be essential if you never touch CSS/SASS files." >&2
+#  elif [ -f $hook_file ]; then
+#    echo "ERROR: It appears that $hook_file already exists.  You may need to delete it and re-run this script." >&2
+#  else
+#    echo -e "$script" > "$hook_file"
+#    chmod +x "$hook_file"
+#    if ! $LINK_GIT_HOOKS; then
+#      cp "$POST_REWRITE_INNER" "$copied_location"
+#      chmod +x "$copied_location"
+#    fi
+#  fi
+#fi
+
+# .git/hooks/pre-commit
+echo "Setting up pre-commit hook to ensure perfect code."
+hook_file=".git/hooks/pre-commit"
+if $LINK_GIT_HOOKS; then
+  script="$PRE_COMMIT_INNER"
+else
+  copied_location=$( cd "$( dirname ".git/hooks" )" && pwd )
+  copied_location="$copied_location/hooks/pre-commit-inner"
+  script="$copied_location"
+fi
+script="#!/bin/sh
+# pre-commit
+$script \$1 \$2 \$3 \$4 \$5"
+if [ ! -f $PRE_COMMIT_INNER ]; then
+  echo "ERROR: The inner script for the pre-commit hook does not exist:" >&2
+  echo "ERROR: $PRE_COMMIT_INNER" >&2
+elif [ -f $hook_file ]; then
+  echo "ERROR: It appears that $hook_file already exists.  You may need to delete the it and re-run this script." >&2
+else
+  echo -e "$script" > "$hook_file"
+  chmod +x "$hook_file"
+  if ! $LINK_GIT_HOOKS; then
+    cp "$PRE_COMMIT_INNER" "$copied_location"
+    chmod +x "$copied_location"
+  fi
+fi
+
+# .git/hooks/advo-pt
+if $LINK_GIT_HOOKS; then
+  echo "Setting up hooks to post the commit message and hash to the related Pivotal Tracker ticket..."
+  echo "What is the Pivotal Tracker project ID? You can get this from the URL when viewing the project dashboard. Enter the ID (if there is one) and press ENTER to continue."
+  read pt_id
+  copied_location=$( cd "$( dirname ".git/hooks" )" && pwd )
+  if [ ! -f $PRE_PUSH ]; then
+    echo "ERROR: The pre-push script does not exist:" >&2
+    echo "ERROR: $PRE_PUSH" >&2
+  else
+    if [ -h $copied_location/hooks/pre-push ]; then
+      rm $copied_location/hooks/pre-push
+    fi
+    ln -s $PRE_PUSH $copied_location/hooks/pre-push
+  fi
+  if [ ! -f $COMMIT_MSG ]; then
+    echo "ERROR: The commit-msg script does not exist:" >&2
+    echo "ERROR: $COMMIT_MSG" >&2
+  else
+    if [ -h $copied_location/hooks/commit-msg ]; then
+      rm $copied_location/hooks/commit-msg
+    fi
+    ln -s $COMMIT_MSG $copied_location/hooks/commit-msg
+  fi
+  git config pivotaltracker.apitoken $PT_API_TOKEN
+  git config pivotaltracker.projectid $pt_id
+else
+  echo "ERROR: Pivotal Tracker Git hooks can only be linked at this time, not copied." >&2
+fi

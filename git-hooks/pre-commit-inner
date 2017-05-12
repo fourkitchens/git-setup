@@ -1,0 +1,91 @@
+#!/usr/bin/php
+<?php
+/**
+ * @file
+ * A Git pre-commit hook that informs you when you are about to commit:
+ *   - a debug function.
+ *   - unbuilt CSS.
+ * @todo jshint
+ */
+
+$red = "\033[1;31m";
+$red_end = "\033[0m";
+
+$yellow = "\033[1;33m";
+$yellow_end = "\033[0m";
+
+$errors = 0;
+
+/**
+ * An array of functions to check for.
+ */
+$check = array();
+$check[] = 'dsm(';
+$check[] = 'dpm(';
+$check[] = 'dpr(';
+$check[] = 'dprint_r(';
+$check[] = 'db_queryd(';
+$check[] = 'krumo';
+$check[] = 'kpr(';
+$check[] = 'kprint_r(';
+$check[] = 'var_dump(';
+$check[] = 'dd(';
+$check[] = 'drupal_debug(';
+$check[] = 'dpq(';
+$check[] = 'console.log(';
+
+$return = 0;
+$diff = array();
+exec('git diff --staged', $diff, $return);
+
+if ($return !== 0) {
+  fwrite(STDERR, "`git diff --staged` returned an error. Commit aborted.\n");
+  exit(1);
+}
+
+foreach ($diff as $lineno => $line) {
+  if (substr($line, 0, 1) != '+') {
+    // We only care about code that is being added.
+    continue;
+  }
+  foreach ($check as $lineno => $function) {
+    if (strpos($line, $function) !== FALSE) {
+      fwrite(STDOUT, "{$red}Oh, noes! You were about to commit a $function)?{$red_end}\n");
+      fwrite(STDOUT, $yellow . $line . $yellow_end ."\n");
+      fwrite(STDOUT, "Commit aborted.\n");
+      fwrite(STDOUT, "use `git diff --staged` to find it.  Use -n to skip pre-commit checks.\n");
+      $errors ++;
+    }
+  }
+}
+
+/*
+ * Check for uncompiled SASS.
+ */
+$return = 0;
+$files = array();
+exec('git diff --staged --name-only', $files, $return);
+
+if ($return !== 0) {
+  fwrite(STDERR, "`git diff --staged --name-only` returned an error. Commit aborted.\n");
+  exit(1);
+}
+$sass = 0;
+$css = 0;
+foreach ($files as $file) {
+  $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+  $sass += $extension == 'sass' ? 1 : 0;
+  $sass += $extension == 'scss' ? 1 : 0;
+  $css += $extension == 'css' ? 1 : 0;
+}
+if ($sass && !$css) {
+  fwrite(STDOUT, "{$red}You clod! You were about to commit a change to a SASS file without compiling.{$red_end}\n");
+  fwrite(STDOUT, "Commit aborted.\n");
+  fwrite(STDOUT, "use `git status` to find out more.  Use -n to skip pre-commit checks.\n");
+  $errors ++;
+}
+
+if ($errors) {
+  exit(2);
+}
+

@@ -1,0 +1,88 @@
+#!/usr/bin/php
+<?php
+require_once __DIR__.'/vendor/autoload.php';
+require_once 'pivotalTracker.php';
+
+use GitWrapper\GitWrapper;
+use GitWrapper\GitWorkingCopy;
+use GitWrapper\GitBranches;
+
+try {
+  $gWrapper = new GitWrapper();
+  $gWorkingCopy = new GitWorkingCopy($gWrapper, getcwd());
+  $gBranches = new GitBranches($gWorkingCopy);
+
+  $remote = trim($argv[1]);
+  $current_branch = trim($gBranches->head());
+
+  try {
+    $api_token = $gWrapper->git('config pivotaltracker.apitoken');
+    $api_token = trim($api_token);
+  } catch (Exception $e) {
+    print('Error: No auth token set. Use `git config pivotaltracker.apitoken "XXXXXXX"` to set your PivotalTracker auth token.' . PHP_EOL);
+    exit(1);
+  }
+
+  try {
+    $project_id = $gWrapper->git('config pivotaltracker.projectid');
+    $project_id = trim($project_id);
+  } catch (Exception $e) {
+    print('Error: No project id set. Use `git config pivotaltracker.projectid "XXXXXXX"` to set your PivotalTracker project id.' . PHP_EOL);
+    exit(1);
+  }
+
+  if (checkBranchIsUpToDate($gWorkingCopy, $current_branch, $remote)) {
+    $pt = new PivotalTracker($api_token, $project_id);
+    foreach (getCommits($gWrapper, $current_branch, $remote) as $commit) {
+      if ($message = $pt->prepareSourceCommitMessage(prepareMessage($gWrapper, $commit))) {
+        try {
+          $pt->sendCommit($message);
+        } catch (Exception $e) {
+          print('Error: ' . $e->getMessage() . PHP_EOL);
+          exit(1);
+        }
+      }
+    }
+  }
+
+} catch (Exception $e) {
+  print('Error: ' . $e->getMessage() . ' You may need to push your commit with the --no-verify flag to bypass this hook.' . PHP_EOL);
+  exit(1);
+}
+
+function checkBranchIsUpToDate(GitWorkingCopy $gWorkingCopy, $current_branch, $remote) {
+  $gWorkingCopy->fetchAll();
+  $remote_head = $gWorkingCopy->getWrapper()
+    ->git("rev-parse {$remote}/{$current_branch}");
+  $remote_head = trim($remote_head);
+
+  return (boolean) $gWorkingCopy->getWrapper()
+    ->git("branch --contains $remote_head");
+}
+
+function prepareMessage(GitWrapper $gWrapper, $commit) {
+  $name = $gWrapper->git("show {$commit} --format='%aN' --quiet");
+  $email = $gWrapper->git("show {$commit} --format='%aE' --quiet");
+  $commit_message = $gWrapper->git("show {$commit} --format='%B' --quiet");
+
+  $content = array(
+    'message' => trim($commit_message),
+    'author' => trim($name),
+    'commit_id' => trim($commit),
+    'url' => '',
+  );
+
+  return $content;
+}
+
+function getCommits(GitWrapper $gWrapper, $current_branch, $remote) {
+  $commits = array();
+  $t_commits = $gWrapper->git("log {$remote}/{$current_branch}..{$current_branch} --pretty='%H'");
+
+  if (!empty($t_commits)) {
+    $commits = explode("\n", $t_commits);
+    $commits = array_filter($commits);
+  }
+
+  return array_reverse($commits);
+}

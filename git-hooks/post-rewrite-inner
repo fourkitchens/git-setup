@@ -1,0 +1,37 @@
+#!/bin/bash
+# post-rewrite
+# A git hook script to rebuild CSS automatically after a rebase.
+
+SASS_BUILD_SCRIPT="$1"
+
+# git arguments will be passed as subsequent arguments.
+
+# $1 will either be rebase or amend.  Avoid amend to prevent an infinite loop.
+if [[ $2 = "rebase" ]]; then
+  # Only Rebuild if the last commit contained SASS files.
+  needs_rebuild=false
+  # Git sends a list of rewritten commits on stdin.
+  while read old_revision new_revision ref_name
+  do
+    files=$(git diff-tree --no-commit-id --name-only -r $new_revision)
+    if [ $? -ne 0 ]; then
+      # Error, rebuild anyway.
+      needs_rebuild=true
+    fi
+    for full_file in $files; do
+      filename=$(basename "$full_file");
+      extension="${filename##*.}"
+      if [ $extension == 'sass' ] || [ $extension == 'scss' ]; then
+         needs_rebuild=true;
+      fi
+    done
+  done
+
+  if $needs_rebuild; then
+    echo "Rebuiling compiled files post $1 ..."
+    $SASS_BUILD_SCRIPT
+    echo "Adding built files to the last commit"
+    git add -u
+    git commit --amend --no-edit
+  fi
+fi
