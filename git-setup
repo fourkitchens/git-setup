@@ -24,11 +24,12 @@ fi
 LINK_GIT_HOOKS=true
 
 # The base directory of any SASS projects.
-# The following line should usually be commented out and just rely on the automatic configuration that follows.  Must have a trailing slash.
-#THEME_LOCATION="sites/all/themes/*/"
+# The following line should usually be commented out and just rely on the
+# automatic configuration that follows.  Must have a trailing slash.
+#THEME_LOCATION="web/themes/*/"
 if [ -z ${THEME_LOCATION+x} ]; then
   DEFAULT_D7_THEME_LOCATION="sites/all/themes/custom/*/"
-  DEFAULT_D8_THEME_LOCATION="themes/custom/*/"
+  DEFAULT_D8_THEME_LOCATION="web/themes/custom/*/"
   if ls $DEFAULT_D7_THEME_LOCATION 1> /dev/null 2>&1; then
     THEME_LOCATION=$DEFAULT_D7_THEME_LOCATION
   elif $DEFAULT_D8_THEME_LOCATION 1> /dev/null 2>&1; then
