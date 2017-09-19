@@ -32,7 +32,7 @@ if [ -z ${THEME_LOCATION+x} ]; then
   DEFAULT_D8_THEME_LOCATION="web/themes/custom/*/"
   if ls $DEFAULT_D7_THEME_LOCATION 1> /dev/null 2>&1; then
     THEME_LOCATION=$DEFAULT_D7_THEME_LOCATION
-  elif $DEFAULT_D8_THEME_LOCATION 1> /dev/null 2>&1; then
+  elif ls $DEFAULT_D8_THEME_LOCATION 1> /dev/null 2>&1; then
     THEME_LOCATION=$DEFAULT_D8_THEME_LOCATION
   else
     echo 'ERROR: This site seems to have an unusual location for custom themes.  You need to hardcode the path at the top of this file.  Uncomment and give a value for the line for THEME_LOCATION=""' >&2
