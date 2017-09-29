@@ -74,7 +74,7 @@ POST_REWRITE_INNER="$current_directory/git-hooks/post-rewrite-inner"
 PRE_COMMIT_INNER="$current_directory/git-hooks/pre-commit-inner"
 PRE_PUSH="$current_directory/git-hooks/pre-push"
 COMMIT_MSG="$current_directory/git-hooks/commit-msg"
-PT_API_TOKEN="9b9b6b72311d10211957be55891d7afa"
+PT_API_TOKEN="409d14eadeae46f12f87105ea91c1f7b"
 
 # END OF CONFIGURATION #
 
