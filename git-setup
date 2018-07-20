@@ -24,10 +24,7 @@ fi
 LINK_GIT_HOOKS=true
 
 # The base directory of any SASS projects.
-# The following line should usually be commented out and just rely on the
-# automatic configuration that follows.  Must have a trailing slash.
-#THEME_LOCATION="web/themes/*/"
-if [ -z ${THEME_LOCATION+x} ]; then
+if [ "$#" == 0 ]; then
   DEFAULT_D7_THEME_LOCATION="sites/all/themes/custom/*/"
   DEFAULT_D8_THEME_LOCATION="web/themes/custom/*/"
   if ls $DEFAULT_D7_THEME_LOCATION 1> /dev/null 2>&1; then
@@ -35,15 +32,22 @@ if [ -z ${THEME_LOCATION+x} ]; then
   elif ls $DEFAULT_D8_THEME_LOCATION 1> /dev/null 2>&1; then
     THEME_LOCATION=$DEFAULT_D8_THEME_LOCATION
   else
-    echo 'ERROR: This site seems to have an unusual location for custom themes.  You need to hardcode the path at the top of this file.  Uncomment and give a value for the line for THEME_LOCATION=""' >&2
-    echo 'ERROR: Be sure to comment it out again when you are done so that your next project is not confused.' >&2
+    echo "ERROR: This site seems to have an unusual location for custom themes." >&2
+    echo "Pass the location of D7 or D8 themes as an argument e.g.:" >&2
+    echo "  git-setup web/themes/custom/*/" >&2
+    echo "Or pass 'none' as an argument to skip theme setup (e.g. if this is a Wordpress project)" >&2
+    echo "  git setup none" >&2
     exit 1
   fi
-elif ls $THEME_LOCATION 1> /dev/null 2>&1; then
+elif [ "$1" == "none" ]; then
+  THEME_LOCATION=''
+  echo "No theme setup."
+elif ls $1 1> /dev/null 2>&1; then
+  THEME_LOCATION=$1
+  echo "Using $THEME_LOCATION as the theme location"
   echo;
-  # Nothing to do here, everything should work fine.
 else
-  echo 'ERROR: THEME_LOCATION has been hard-coded in this file, but that path does not exist.  If you just comment it out, the defaults will probably work fine.' >&2
+  echo "ERROR: $1 does not seem to exist." >&2
   exit 1
 fi
 
@@ -92,14 +96,16 @@ if [ ! -f .gitattributes ]; then
 fi
 
 # Binary compiled CSS.
-string="${THEME_LOCATION}css/* -diff"
-fgrep "$string" .gitattributes > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "Setting up .gitattributes file with some sane defaults. Be sure to commit this file."
-  echo "$string" >> .gitattributes
-  echo "${THEME_LOCATION}css/* -diff"  >> .gitattributes
-  echo "${THEME_LOCATION}css/*/* -diff"  >> .gitattributes
-  echo "${THEME_LOCATION}css/*/*/* -diff" >> .gitattributes
+if [ "$THEME_LOCATION" != "" ]; then
+  string="${THEME_LOCATION}css/* -diff"
+  fgrep "$string" .gitattributes > /dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "Setting up .gitattributes file with some sane defaults. Be sure to commit this file."
+    echo "$string" >> .gitattributes
+    echo "${THEME_LOCATION}css/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}css/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}css/*/*/* -diff" >> .gitattributes
+  fi;
 fi;
 
 # .git/info/exclude
