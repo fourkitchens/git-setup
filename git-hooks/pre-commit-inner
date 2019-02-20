@@ -78,8 +78,8 @@ foreach ($files as $file) {
   $sass += $extension == 'scss' ? 1 : 0;
   $css += $extension == 'css' ? 1 : 0;
 }
-if ($sass && !$css) {
-  fwrite(STDOUT, "{$red}You clod! You were about to commit a change to a SASS file without compiling.{$red_end}\n");
+if ($sass && $css) {
+  fwrite(STDOUT, "{$red}You were about to commit a change to both a SASS file and compiled CSS. Please split into two commits.{$red_end}\n");
   fwrite(STDOUT, "Commit aborted.\n");
   fwrite(STDOUT, "use `git status` to find out more.  Use -n to skip pre-commit checks.\n");
   $errors ++;
