@@ -105,6 +105,16 @@ if [ "$THEME_LOCATION" != "" ]; then
     echo "${THEME_LOCATION}css/* -diff"  >> .gitattributes
     echo "${THEME_LOCATION}css/*/* -diff"  >> .gitattributes
     echo "${THEME_LOCATION}css/*/*/* -diff" >> .gitattributes
+    echo "${THEME_LOCATION}dist/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}dist/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}dist/*/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}dist/*/*/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}pattern-lab/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}pattern-lab/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}pattern-lab/*/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}pattern-lab/*/*/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}pattern-lab/*/*/*/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}pattern-lab/*/*/*/*/*/* -diff"  >> .gitattributes
   fi;
 fi;
 
