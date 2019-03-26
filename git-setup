@@ -97,24 +97,14 @@ fi
 
 # Binary compiled CSS.
 if [ "$THEME_LOCATION" != "" ]; then
-  string="${THEME_LOCATION}css/* -diff"
+  string="${THEME_LOCATION}css/** -diff"
   fgrep "$string" .gitattributes > /dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo "Setting up .gitattributes file with some sane defaults. Be sure to commit this file."
+    echo "# Treat compiled code as binary so that it will not be shown in diffs." >> .gitattributes
     echo "$string" >> .gitattributes
-    echo "${THEME_LOCATION}css/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}css/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}css/*/*/* -diff" >> .gitattributes
-    echo "${THEME_LOCATION}dist/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}dist/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}dist/*/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}dist/*/*/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}pattern-lab/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}pattern-lab/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}pattern-lab/*/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}pattern-lab/*/*/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}pattern-lab/*/*/*/*/* -diff"  >> .gitattributes
-    echo "${THEME_LOCATION}pattern-lab/*/*/*/*/*/* -diff"  >> .gitattributes
+    echo "${THEME_LOCATION}dist/** -diff" >> .gitattributes
+    echo "${THEME_LOCATION}pattern-lab/**" -diff >> .gitattributes
   fi;
 fi;
 
