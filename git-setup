@@ -78,7 +78,6 @@ POST_REWRITE_INNER="$current_directory/git-hooks/post-rewrite-inner"
 PRE_COMMIT_INNER="$current_directory/git-hooks/pre-commit-inner"
 PRE_PUSH="$current_directory/git-hooks/pre-push"
 COMMIT_MSG="$current_directory/git-hooks/commit-msg"
-PT_API_TOKEN="409d14eadeae46f12f87105ea91c1f7b"
 
 # END OF CONFIGURATION #
 
@@ -189,13 +188,27 @@ fi
 
 # .git/hooks/advo-pt
 if $LINK_GIT_HOOKS; then
+  echo ""
   echo "Setting up hooks to post the commit message and hash to the related Pivotal Tracker ticket..."
-  echo "What is the Pivotal Tracker project ID? You can get this from the URL when viewing the project dashboard. Enter the ID (if there is one) and press ENTER to continue."
-  read pt_id
-  if [ -z $pt_id ]; then
-    echo "No Pivotal Tracker project.  Bailing."
+  echo ""
+  echo "What is your Pivotal Tracker API Token?"
+  echo "  https://www.pivotaltracker.com/profile"
+  echo "Enter the token (You can use an existing one) (leave blank if this project is not currently using Pivotal Tracker) and press ENTER to continue."
+  read pt_api_token
+  if [ -z "$pt_api_token" ]; then
+    echo "No Pivotal Tracker integration.  All done."
     exit 0;
   fi
+  git config pivotaltracker.apitoken $pt_api_token
+
+  echo "What is the Pivotal Tracker project ID? You can get this from the URL when viewing the project dashboard. Enter the ID and press ENTER to continue."
+  read pt_id
+  if [ -z "$pt_id" ]; then
+    echo "No Pivotal Tracker project.  Bailing."
+    exit 1;
+  fi
+  git config pivotaltracker.projectid $pt_id
+
   copied_location=$( cd "$( dirname ".git/hooks" )" && pwd )
   if [ ! -f $PRE_PUSH ]; then
     echo "ERROR: The pre-push script does not exist:" >&2
@@ -206,6 +219,7 @@ if $LINK_GIT_HOOKS; then
     fi
     ln -s $PRE_PUSH $copied_location/hooks/pre-push
   fi
+
   if [ ! -f $COMMIT_MSG ]; then
     echo "ERROR: The commit-msg script does not exist:" >&2
     echo "ERROR: $COMMIT_MSG" >&2
@@ -215,8 +229,9 @@ if $LINK_GIT_HOOKS; then
     fi
     ln -s $COMMIT_MSG $copied_location/hooks/commit-msg
   fi
-  git config pivotaltracker.apitoken $PT_API_TOKEN
-  git config pivotaltracker.projectid $pt_id
+
+  echo "Pivotal Tracker Git hooks are set up."
+
 else
   echo "ERROR: Pivotal Tracker Git hooks can only be linked at this time, not copied." >&2
 fi
