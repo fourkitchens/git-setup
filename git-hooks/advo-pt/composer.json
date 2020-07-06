@@ -1,6 +1,6 @@
 {
     "require": {
-        "guzzlehttp/guzzle": "~5.2",
+        "guzzlehttp/guzzle": "^7.0",
         "cpliakas/git-wrapper": "~1.0"
     }
 }
