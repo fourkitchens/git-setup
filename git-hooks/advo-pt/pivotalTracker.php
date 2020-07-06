@@ -40,7 +40,7 @@ class PivotalTracker {
       try {
         $response = $client->get("{$this->api_url}/projects/{$this->project_id}/stories/$ticket_number",
           array('headers' => $this->getHeaders()));
-        $ticket = $response->json();
+        $ticket = json_decode($response->getBody(), TRUE);
       }
       catch (GuzzleClientException $e) {
         if ($e->getCode() === 404) {
