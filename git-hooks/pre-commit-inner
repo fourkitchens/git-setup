@@ -62,6 +62,15 @@ foreach ($diff as $lineno => $line) {
 /*
  * Check for uncompiled SASS.
  */
+
+// If we're in the middle of a merge commit, don't do anything.
+$return = 0;
+$output = [];
+exec('git rev-parse -q --verify MERGE_HEAD', $output, $return);
+if ($output) {
+  exit(0);
+}
+
 $return = 0;
 $files = array();
 exec('git diff --staged --name-only', $files, $return);
