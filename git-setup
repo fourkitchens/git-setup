@@ -4,7 +4,7 @@
 
 # INSTRUCTIONS #
 #
-# Run this script to set up your repository to work with the Advo workflow.
+# Run this script to set up your repository to work with the Advo (Four Kitchens Gemini) workflow.
 
 # Are we in the root of the repo?
 if [ ! -d ./.git ]; then
